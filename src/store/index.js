@@ -3,16 +3,35 @@ import router from '../router'
 export default createStore({
   state: {
     tareas: [],
+    user: null,
+    error: { tipo: null, mensaje: null },
     tarea: {
       id: '',
       nombre: "",
       categorias: [],
       estado: "",
       numero: 0,
-    },
-    user: null
+    }
+
   },
   mutations: {
+    setError(state, payload) {
+      if (payload == null) {
+        return state.error = { tipo: null, mensaje: null }
+      }
+      if (payload === "EMAIL_NOT_FOUND") {
+        return state.error = { tipo: 'email', mensaje: 'Email no registrado' }
+      }
+      if (payload === "INVALID_PASSWORD") {
+        return state.error = { tipo: 'password', mensaje: 'Contraseña incorrecta' }
+      }
+      if (payload === "EMAIL_EXISTS") {
+        return state.error = { tipo: 'email', mensaje: 'este correo ya esta registrado' }
+      }
+      if (payload === "INVALID_EMAIL") {
+        return state.error = { tipo: 'email', mensaje: 'correo electronico incorrecto' }
+      }
+    },
     setUser(state, payload) {
       state.user = payload
     },
@@ -45,8 +64,9 @@ export default createStore({
   actions: {
     cerrarSesion({ commit }) {
       commit('setUser', null)
-      router.push('/ingreso')
       localStorage.removeItem('usuario')
+      router.push('/ingreso')
+
     },
     async ingresoUsuario({ commit }, usuario) {
       try {
@@ -59,13 +79,17 @@ export default createStore({
           })
         })
         const userDB = await res.json()
-        console.log('userDB', userDB)
+
         if (userDB.error) {
           console.log(userDB.error)
+          return commit('setError', userDB.error.message)
+
         }
+
         commit('setUser', userDB)
-        router.push('/')
+        commit('setError', null)
         localStorage.setItem('usuario', JSON.stringify(userDB))
+        router.push('/')
       } catch (error) {
         console.log(error)
       }
@@ -83,13 +107,14 @@ export default createStore({
         const userDB = await res.json()
 
         if (userDB.error) {
-          console.log(userDB.error)
-          return
+          return commit('setError', userDB.error.message)
+
         }
         commit('setUser', userDB)
-        router.push('/')
-        localStorage.setItem('usuario', JSON.stringify(userDB))
+        commit('setError', null)
 
+        localStorage.setItem('usuario', JSON.stringify(userDB))
+        router.push('/')
 
       } catch (error) {
         console.log(error)
